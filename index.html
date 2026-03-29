@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>灵动课表 · 大学课程助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 深色模式适配 */
+        :root {
+            --bg-primary: #f5f7fc;
+            --card-bg: rgba(255, 255, 255, 0.96);
+            --text-primary: #1e293b;
+            --text-secondary: #5b6e8c;
+            --border-light: #e2e8f0;
+            --tab-bg: #f1f4f9;
+            --course-item-bg: #f8fafc;
+            --accent: #3b82f6;
+            --accent-dark: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --footer-bg: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0f172a;
+                --card-bg: #1e293b;
+                --text-primary: #f1f5f9;
+                --text-secondary: #94a3b8;
+                --border-light: #334155;
+                --tab-bg: #0f172a;
+                --course-item-bg: #334155;
+                --accent: #60a5fa;
+                --accent-dark: #3b82f6;
+                --footer-bg: #1e293b;
+            }
+            
+            input, select, textarea {
+                background: #334155;
+                color: #f1f5f9;
+                border-color: #475569;
+            }
+            
+            .badge {
+                background: #1e293b;
+                color: #94a3b8;
+            }
+            
+            .delete-btn {
+                color: #f87171;
+            }
+        }
+
+        body {
+            background: var(--bg-primary);
+            font-family: system-ui, -apple-system, 'Helvetica Neue', 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+            padding: 20px 16px 100px;
+            color: var(--text-primary);
+            transition: background 0.3s ease;
+        }
+
+        .app-container {
+            max-width: 550px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 32px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 20px 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-light);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .sub {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input, select, button {
+            font-size: 1rem;
+            padding: 12px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border-light);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            width: 100%;
+            outline: none;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.97);
+            background: var(--accent-dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:active {
+            background: var(--course-item-bg);
+        }
+
+        .row-2col {
+            display: flex;
+            gap: 12px;
+        }
+
+        .row-2col > div {
+            flex: 1;
+        }
+
+        .view-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            background: var(--tab-bg);
+            padding: 4px;
+            border-radius: 48px;
+        }
+
+        .view-tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px 0;
+            border-radius: 40px;
+            font-weight: 500;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-tab.active {
+            background: var(--card-bg);
+            color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .weeks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+            gap: 8px;
+            margin-top: 12px;
+            margin-bottom: 16px;
+        }
+
+        .week-btn {
+            background: var(--course-item-bg);
+            border: 1px solid var(--border-light);
+            padding: 8px 4px;
+            text-align: center;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-primary);
+        }
+
+        .week-btn.selected {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .week-shortcuts {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .shortcut-btn {
+            flex: 1;
+            background: var(--tab-bg);
+            padding: 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-align: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .today-course-item {
+            background: var(--course-item-bg);
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .week-row {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            padding: 12px 0;
+        }
+
+        .week-day-header {
+            font-weight: 600;
+            min-width: 70px;
+            color: var(--accent);
+        }
+
+        .week-courses {
+            flex: 1;
+        }
+
+        .course-chip {
+            background: var(--accent);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-bottom: 6px;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px 16px;
+            color: var(--text-secondary);
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            width: auto;
+            margin-top: 8px;
+            box-shadow: none;
+        }
+
+        .bottom-settings-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--footer-bg);
+            border-top: 1px solid var(--border-light);
+            padding: 12px 20px 20px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            background: var(--card-bg);
+        }
+
+        .settings-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+
+        .settings-toggle button {
+            flex: 1;
+            margin: 0;
+            padding: 10px;
+            background: var(--tab-bg);
+            color: var(--text-primary);
+        }
+
+        .settings-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .settings-panel.open {
+            max-height: 620px;
+            overflow-y: auto;
+        }
+
+        .settings-content {
+            padding-top: 12px;
+        }
+
+        .close-settings {
+            text-align: center;
+            margin-top: 12px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .duration-selector, .break-selector {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: var(--course-item-bg);
+            padding: 8px 12px;
+            border-radius: 24px;
+            border: 1px solid var(--border-light);
+        }
+        .duration-selector span, .break-selector span {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        .duration-selector select, .break-selector select {
+            flex: 1;
+            margin: 0;
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container" id="app">
+    <div id="mainPanel">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                <h2>📖 我的课程表</h2>
+                <span id="weekRangeDisplay" style="font-size: 0.75rem; background: var(--tab-bg); padding:4px 12px; border-radius:40px;"></span>
+            </div>
+            <div class="sub" id="semesterInfo"></div>
+            <button id="openAddCourseBtn" style="background: var(--accent-dark);">+ 添加课程</button>
+        </div>
+
+        <div class="card">
+            <div class="view-tabs">
+                <div class="view-tab active" data-view="today">📅 今日课程</div>
+                <div class="view-tab" data-view="week">📆 本周课表</div>
+            </div>
+            <div id="viewContent"></div>
+        </div>
+
+        <div class="card">
+            <h3>⚙️ 课时微调</h3>
+            <div class="view-tabs" id="periodTabs" style="margin-bottom: 12px;">
+                <div class="view-tab active" data-segment="morning">🌅 上午</div>
+                <div class="view-tab" data-segment="afternoon">☀️ 下午</div>
+                <div class="view-tab" data-segment="evening">🌙 晚间</div>
+            </div>
+            <div id="periodConfigArea"></div>
+            <button id="savePeriodsBtn" class="btn-outline" style="margin-top: 12px;">保存节次时间</button>
+        </div>
+
+        <div class="card">
+            <h3>⏰ 上课提醒</h3>
+            <div class="form-group">
+                <label>提前多久提醒（分钟）</label>
+                <input type="number" id="reminderMinutes" value="15" min="0" max="1440" step="5">
+            </div>
+            <button id="requestNotifyBtn" class="btn-outline">🔔 请求通知权限</button>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-settings-bar">
+    <div class="settings-toggle">
+        <button id="openSettingsBtn">⚙️ 学期与课时设置</button>
+    </div>
+    <div id="settingsPanel" class="settings-panel">
+        <div class="settings-content">
+            <h3>📅 学期设置</h3>
+            <div class="form-group">
+                <label>学期开始日期（第一周周一）</label>
+                <input type="date" id="semesterStartSetting">
+            </div>
+            <div class="form-group">
+                <label>本学期持续周数</label>
+                <input type="number" id="totalWeeksSetting" min="1" max="30" step="1">
+            </div>
+            
+            <h3 style="margin-top: 16px;">⏰ 各时段课程数量</h3>
+            <div class="row-2col">
+                <div>
+                    <label>🌅 上午节数</label>
+                    <input type="number" id="morningCountSetting" min="0" max="8" step="1" value="4">
+                </div>
+                <div>
+                    <label>☀️ 下午节数</label>
+                    <input type="number" id="afternoonCountSetting" min="0" max="8" step="1" value="4">
+                </div>
+                <div>
+                    <label>🌙 晚间节数</label>
+                    <input type="number" id="eveningCountSetting" min="0" max="6" step="1" value="2">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>📅 周末是否上课</label>
+                <select id="weekendEnabledSetting">
+                    <option value="true">是（周六周日可排课）</option>
+                    <option value="false" selected>否（跳过周六周日）</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>⏰ 每节课时长</label>
+                <div class="duration-selector">
+                    <span>每节课</span>
+                    <select id="durationMinutesSelect">
+                        <option value="30">30分钟</option><option value="35">35分钟</option><option value="40">40分钟</option>
+                        <option value="45" selected>45分钟</option><option value="50">50分钟</option><option value="55">55分钟</option>
+                        <option value="60">60分钟</option><option value="70">70分钟</option><option value="80">80分钟</option><option value="90">90分钟</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>⏸️ 课间休息时长</label>
+                <div class="break-selector">
+                    <span>课间休息</span>
+                    <select id="breakMinutesSelect">
+                        <option value="5">5分钟</option><option value="10" selected>10分钟</option><option value="15">15分钟</option>
+                        <option value="20">20分钟</option><option value="25">25分钟</option><option value="30">30分钟</option>
+                        <option value="0">无课间</option>
+                    </select>
+                </div>
+                <div class="sub">* 每节课后休息时长，自动生成各时段起止时间</div>
+            </div>
+            
+            <button id="applySettingsBtn" style="background: var(--accent);">应用设置并刷新课表</button>
+            <div class="close-settings" id="closeSettingsBtn">收起设置</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 存储结构
+    let settings = {
+        semesterStart: "2025-02-24",
+        totalWeeks: 16,
+        maxDailyPeriods: 8,
+        weekendEnabled: false,
+        durationMinutes: 45,
+        breakMinutes: 10,
+        periods: {
+            morning: { count: 4, times: [] },
+            afternoon: { count: 4, times: [] },
+            evening: { count: 2, times: [] }
+        }
+    };
+
+    let courses = [];
+
+    // 根据时长、课间和各时段节数生成课时时间表
+    function buildDefaultPeriodTimes(settings) {
+        const morningCount = settings.periods.morning.count;
+        const afternoonCount = settings.periods.afternoon.count;
+        const eveningCount = settings.periods.evening.count;
+        const durationMin = settings.durationMinutes || 45;
+        const breakMin = settings.breakMinutes !== undefined ? settings.breakMinutes : 10;
+        
+        const generateTimes = (count, startHour, startMinute) => {
+            let times = [];
+            let curHour = startHour, curMin = startMinute;
+            for(let i=0;i<count;i++) {
+                let start = `${String(curHour).padStart(2,'0')}:${String(curMin).padStart(2,'0')}`;
+                let endMin = curMin + durationMin;
+                let endHour = curHour + Math.floor(endMin/60);
+                let endMinute = endMin % 60;
+                let end = `${String(endHour).padStart(2,'0')}:${String(endMinute).padStart(2,'0')}`;
+                times.push({start, end});
+                // 课间休息
+                curMin += durationMin + breakMin;
+                curHour += Math.floor(curMin/60);
+                curMin = curMin % 60;
+            }
+            return times;
+        };
+        
+        return {
+            morning: generateTimes(morningCount, 8, 0),
+            afternoon: generateTimes(afternoonCount, 13, 30),
+            evening: generateTimes(eveningCount, 18, 30)
+        };
+    }
+
+    function rebuildPeriodsFromSettings() {
+        const newTimes = buildDefaultPeriodTimes(settings);
+        settings.periods.morning.times = newTimes.morning;
+        settings.periods.afternoon.times = newTimes.afternoon;
+        settings.periods.evening.times = newTimes.evening;
+    }
+
+    function getAllPeriodsFlat() {
+        let all = [];
+        all.push(...settings.periods.morning.times);
+        all.push(...settings.periods.afternoon.times);
+        all.push(...settings.periods.evening.times);
+        return all;
+    }
+
+    function checkTimeConflict(newCourse, excludeId = null) {
+        for(let existing of courses) {
+            if(excludeId !== null && existing.id === excludeId) continue;
+            if(existing.dayOfWeek !== newCourse.dayOfWeek) continue;
+            const hasWeekOverlap = newCourse.weekIndices.some(w => existing.weekIndices.includes(w));
+            if(!hasWeekOverlap) continue;
+            const existingStart = existing.periodIndex;
+            const existingEnd = existing.periodIndex + existing.duration - 1;
+            const newStart = newCourse.periodIndex;
+            const newEnd = newCourse.periodIndex + newCourse.duration - 1;
+            if(!(newEnd < existingStart || newStart > existingEnd)) {
+                return { conflict: true, courseName: existing.name };
+            }
+        }
+        return { conflict: false };
+    }
+
+    function renderWeekSelector(container, totalWeeks, selectedWeeks, onUpdate) {
+        let html = `<div class="week-shortcuts">
+            <div class="shortcut-btn" data-shortcut="all">全选</div>
+            <div class="shortcut-btn" data-shortcut="odd">单周</div>
+            <div class="shortcut-btn" data-shortcut="even">双周</div>
+            <div class="shortcut-btn" data-shortcut="clear">清空</div>
+        </div><div class="weeks-grid" id="weeksGrid">`;
+        for(let i=1;i<=totalWeeks;i++) {
+            const isSelected = selectedWeeks.includes(i-1);
+            html += `<div class="week-btn ${isSelected ? 'selected' : ''}" data-week="${i-1}">${i}周</div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        const updateSelections = () => {
+            document.querySelectorAll('#weeksGrid .week-btn').forEach(btn => {
+                const week = parseInt(btn.dataset.week);
+                if(selectedWeeks.includes(week)) btn.classList.add('selected');
+                else btn.classList.remove('selected');
+            });
+            onUpdate(selectedWeeks);
+        };
+        
+        document.querySelectorAll('#weeksGrid .week-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const week = parseInt(btn.dataset.week);
+                const idx = selectedWeeks.indexOf(week);
+                if(idx === -1) selectedWeeks.push(week);
+                else selectedWeeks.splice(idx, 1);
+                selectedWeeks.sort((a,b)=>a-b);
+                updateSelections();
+            });
+        });
+        
+        document.querySelectorAll('[data-shortcut]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.shortcut;
+                if(type === 'all') {
+                    selectedWeeks.length = 0;
+                    for(let i=0;i<totalWeeks;i++) selectedWeeks.push(i);
+                } else if(type === 'odd') {
+                    selectedWeeks.length = 0;
+                    for(let i=0;i<totalWeeks;i+=2) selectedWeeks.push(i);
+                } else if(type === 'even') {
+                    selectedWeeks.length = 0;
+                    for(let i=1;i<totalWeeks;i+=2) selectedWeeks.push(i);
+                } else if(type === 'clear') {
+                    selectedWeeks.length = 0;
+                }
+                updateSelections();
+            });
+        });
+    }
+
+    function showAddCourseModal() {
+        const flatPeriods = getAllPeriodsFlat();
+        if(flatPeriods.length === 0) {
+            alert("请先在设置中配置至少一节课程（上午/下午/晚间节数不能全为0）");
+            return;
+        }
+        const totalWeeks = settings.totalWeeks;
+        let selectedWeeks = [...Array(totalWeeks).keys()];
+        
+        const modalHtml = `
+            <div id="courseModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:1001;">
+                <div style="background:var(--card-bg); border-radius:36px; max-width:90%; width:450px; padding:24px; max-height:85vh; overflow-y:auto;">
+                    <h3>📖 添加课程</h3>
+                    <div class="form-group"><label>课程名 *</label><input id="modalCourseName" placeholder="高等数学"></div>
+                    <div class="form-group"><label>教师</label><input id="modalTeacher" placeholder="张教授"></div>
+                    <div class="form-group"><label>地点</label><input id="modalLocation" placeholder="教学楼A101"></div>
+                    <div class="form-group"><label>星期</label>
+                        <select id="modalDay">
+                            <option value="0">周一</option><option value="1">周二</option><option value="2">周三</option>
+                            <option value="3">周四</option><option value="4">周五</option>
+                            ${settings.weekendEnabled ? '<option value="5">周六</option><option value="6">周日</option>' : ''}
+                        </select>
+                    </div>
+                    <div class="form-group"><label>起始节次 (1-${flatPeriods.length})</label>
+                        <input id="modalPeriodIdx" type="number" min="1" max="${flatPeriods.length}" value="1">
+                    </div>
+                    <div class="form-group"><label>连堂节数</label>
+                        <input id="modalDuration" type="number" min="1" max="4" value="1">
+                    </div>
+                    <div class="form-group"><label>📅 选择上课周次</label>
+                        <div id="weekSelectorContainer"></div>
+                    </div>
+                    <div class="form-group"><label>自定义上课时间(可选)</label>
+                        <div class="row-2col"><input id="customStartTime" placeholder="如09:00"><input id="customEndTime" placeholder="如10:30"></div>
+                    </div>
+                    <div style="display: flex; gap:12px; margin-top:16px;">
+                        <button id="modalConfirmBtn">确认添加</button>
+                        <button id="modalCloseBtn" class="btn-outline">取消</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modalDiv = document.getElementById('courseModal');
+        
+        renderWeekSelector(document.getElementById('weekSelectorContainer'), totalWeeks, selectedWeeks, (newSelections) => {
+            selectedWeeks = newSelections;
+        });
+        
+        const confirm = document.getElementById('modalConfirmBtn');
+        const close = document.getElementById('modalCloseBtn');
+        const removeModal = () => modalDiv.remove();
+        
+        confirm.onclick = () => {
+            const name = document.getElementById('modalCourseName').value.trim();
+            if(!name) { alert("请输入课程名"); return; }
+            const teacher = document.getElementById('modalTeacher').value;
+            const location = document.getElementById('modalLocation').value;
+            const day = parseInt(document.getElementById('modalDay').value);
+            let periodIdx = parseInt(document.getElementById('modalPeriodIdx').value)-1;
+            const duration = parseInt(document.getElementById('modalDuration').value);
+            const customStart = document.getElementById('customStartTime').value;
+            const customEnd = document.getElementById('customEndTime').value;
+            
+            if(periodIdx + duration > getAllPeriodsFlat().length) {
+                alert(`节次超出范围，最大节次为${getAllPeriodsFlat().length}`);
+                return;
+            }
+            
+            if(selectedWeeks.length === 0) {
+                alert("请至少选择一周");
+                return;
+            }
+            
+            const newCourse = {
+                id: Date.now(),
+                name, teacher, location, dayOfWeek: day, periodIndex: periodIdx, duration: duration,
+                weekIndices: [...selectedWeeks],
+                customStart: customStart || null,
+                customEnd: customEnd || null
+            };
+            
+            const conflict = checkTimeConflict(newCourse);
+            if(conflict.conflict) {
+                alert(`⚠️ 时间冲突！与课程「${conflict.courseName}」在同一时间段/周次重叠，请调整节次或周次。`);
+                return;
+            }
+            
+            courses.push(newCourse);
+            saveToLocal();
+            renderCourses();
+            refreshCurrentView();
+            removeModal();
+        };
+        close.onclick = removeModal;
+    }
+
+    function saveToLocal() {
+        localStorage.setItem('smartTimetableV5', JSON.stringify({settings, courses}));
+    }
+
+    function loadFromLocal() {
+        const data = localStorage.getItem('smartTimetableV5');
+        if(data) {
+            try{
+                const parsed = JSON.parse(data);
+                if(parsed.settings && parsed.courses) {
+                    settings = parsed.settings;
+                    courses = parsed.courses;
+                    if(settings.weekendEnabled === undefined) settings.weekendEnabled = false;
+                    if(settings.durationMinutes === undefined) settings.durationMinutes = 45;
+                    if(settings.breakMinutes === undefined) settings.breakMinutes = 10;
+                    if(!settings.periods || !settings.periods.morning) {
+                        rebuildPeriodsFromSettings();
+                    }
+                    return true;
+                }
+            }catch(e){}
+        }
+        return false;
+    }
+
+    function applyGlobalSettings() {
+        const newStart = document.getElementById('semesterStartSetting').value;
+        const newWeeks = parseInt(document.getElementById('totalWeeksSetting').value);
+        const newMorningCount = parseInt(document.getElementById('morningCountSetting').value);
+        const newAfternoonCount = parseInt(document.getElementById('afternoonCountSetting').value);
+        const newEveningCount = parseInt(document.getElementById('eveningCountSetting').value);
+        const newWeekend = document.getElementById('weekendEnabledSetting').value === 'true';
+        const newDuration = parseInt(document.getElementById('durationMinutesSelect').value);
+        const newBreak = parseInt(document.getElementById('breakMinutesSelect').value);
+        
+        if(isNaN(newMorningCount) || isNaN(newAfternoonCount) || isNaN(newEveningCount)) return;
+        
+        settings.semesterStart = newStart;
+        settings.totalWeeks = newWeeks;
+        settings.weekendEnabled = newWeekend;
+        settings.durationMinutes = newDuration;
+        settings.breakMinutes = newBreak;
+        settings.periods.morning.count = newMorningCount;
+        settings.periods.afternoon.count = newAfternoonCount;
+        settings.periods.evening.count = newEveningCount;
+        
+        rebuildPeriodsFromSettings();
+        
+        const maxPeriods = getAllPeriodsFlat().length;
+        let hasInvalid = false;
+        courses = courses.filter(c => {
+            if(c.periodIndex + c.duration > maxPeriods) {
+                hasInvalid = true;
+                return false;
+            }
+            return true;
+        });
+        if(hasInvalid) alert("部分课程的节次超出新课时范围，已自动删除这些课程");
+        
+        courses = courses.filter(c => {
+            c.weekIndices = c.weekIndices.filter(w => w < settings.totalWeeks);
+            return c.weekIndices.length > 0;
+        });
+        
+        saveToLocal();
+        
+        document.getElementById('semesterInfo').innerHTML = `📆 ${settings.semesterStart} 起，共 ${settings.totalWeeks} 周 | ${settings.weekendEnabled ? '周末上课' : '周末休息'} | 每节${settings.durationMinutes}分钟 | 课间${settings.breakMinutes}分钟`;
+        document.getElementById('weekRangeDisplay').innerHTML = `共${settings.totalWeeks}周`;
+        refreshPeriodUI();
+        refreshCurrentView();
+        
+        alert("设置已应用！课时表已更新。");
+    }
+
+    function refreshPeriodUI() {
+        const container = document.getElementById('periodConfigArea');
+        if(!container) return;
+        const activeSegment = document.querySelector('#periodTabs .view-tab.active')?.dataset.segment || 'morning';
+        let times = settings.periods[activeSegment].times;
+        if(!times) times = [];
+        let html = `<div class="sub">${activeSegment==='morning'?'上午':activeSegment==='afternoon'?'下午':'晚间'} 共 ${times.length} 节课，每节${settings.durationMinutes}分钟+课间${settings.breakMinutes}分钟</div>`;
+        for(let i=0;i<times.length;i++) {
+            html += `<div class="row-2col" style="margin-bottom: 10px;">
+                        <div><label>第${i+1}节 开始</label><input type="time" class="period-start" data-seg="${activeSegment}" data-idx="${i}" value="${times[i].start}"></div>
+                        <div><label>结束</label><input type="time" class="period-end" data-seg="${activeSegment}" data-idx="${i}" value="${times[i].end}"></div>
+                     </div>`;
+        }
+        container.innerHTML = html;
+        document.querySelectorAll('.period-start, .period-end').forEach(inp => {
+            inp.addEventListener('change', (e) => {
+                const seg = inp.dataset.seg;
+                const idx = parseInt(inp.dataset.idx);
+                const isStart = inp.classList.contains('period-start');
+                let val = inp.value;
+                if(settings.periods[seg] && settings.periods[seg].times[idx]) {
+                    if(isStart) settings.periods[seg].times[idx].start = val;
+                    else settings.periods[seg].times[idx].end = val;
+                    saveToLocal();
+                    refreshCurrentView();
+                }
+            });
+        });
+    }
+
+    function getCoursesForDay(weekIndex, dayOfWeek) {
+        return courses.filter(c => c.weekIndices.includes(weekIndex) && c.dayOfWeek === dayOfWeek);
+    }
+
+    function renderTodayView() {
+        const now = new Date();
+        const startDate = new Date(settings.semesterStart);
+        const weekNum = Math.floor((now - startDate) / (7*24*60*60*1000));
+        if(weekNum < 0 || weekNum >= settings.totalWeeks) {
+            return `<div class="empty-state">📅 当前不在学期周次范围内</div>`;
+        }
+        let dayOfWeek = now.getDay();
+        let courseDay = (dayOfWeek === 0 ? 6 : dayOfWeek - 1);
+        const dayCourses = getCoursesForDay(weekNum, courseDay);
+        if(dayCourses.length === 0) return `<div class="empty-state">✨ 今日无课程安排</div>`;
+        
+        const flatPeriods = getAllPeriodsFlat();
+        let html = `<div class="sub">📌 第${weekNum+1}周 周${['一','二','三','四','五','六','日'][courseDay]}</div>`;
+        dayCourses.sort((a,b)=>a.periodIndex - b.periodIndex).forEach(c => {
+            let timeStr = c.customStart ? `${c.customStart}-${c.customEnd}` : 
+                         (flatPeriods[c.periodIndex] ? `${flatPeriods[c.periodIndex].start}-${flatPeriods[c.periodIndex].end}` : "时间待定");
+            html += `<div class="today-course-item">
+                        <div style="font-weight:600">${escapeHtml(c.name)}</div>
+                        <div style="font-size:0.8rem; margin-top:4px">👩‍🏫 ${c.teacher || '未填'} | 📍 ${c.location || '未填'}</div>
+                        <div style="font-size:0.75rem; color:var(--accent); margin-top:4px">⏰ ${timeStr} ${c.duration>1 ? `(连堂${c.duration}节)` : ''}</div>
+                        <button class="delete-btn" data-id="${c.id}">删除课程</button>
+                    </div>`;
+        });
+        setTimeout(() => {
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = parseInt(btn.dataset.id);
+                    courses = courses.filter(c => c.id !== id);
+                    saveToLocal();
+                    renderCourses();
+                    refreshCurrentView();
+                });
+            });
+        }, 10);
+        return html;
+    }
+
+    function renderWeekView() {
+        const now = new Date();
+        const startDate = new Date(settings.semesterStart);
+        let weekNum = Math.floor((now - startDate) / (7*24*60*60*1000));
+        if(weekNum < 0) weekNum = 0;
+        if(weekNum >= settings.totalWeeks) weekNum = settings.totalWeeks - 1;
+        
+        const days = settings.weekendEnabled ? [0,1,2,3,4,5,6] : [0,1,2,3,4];
+        const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        let html = `<div class="sub">📆 第${weekNum+1}周 / 共${settings.totalWeeks}周 | 每节${settings.durationMinutes}分钟 课间${settings.breakMinutes}分钟</div>`;
+        
+        for(let day of days) {
+            const dayCourses = getCoursesForDay(weekNum, day);
+            html += `<div class="week-row">
+                        <div class="week-day-header">${dayNames[day]}</div>
+                        <div class="week-courses">`;
+            if(dayCourses.length === 0) html += `<span style="color:var(--text-secondary); font-size:0.75rem;">无课程</span>`;
+            else {
+                dayCourses.sort((a,b)=>a.periodIndex-b.periodIndex).forEach(c => {
+                    html += `<span class="course-chip">${escapeHtml(c.name)}${c.location ? ` @${c.location}` : ''}</span>`;
+                });
+            }
+            html += `</div></div>`;
+        }
+        return html;
+    }
+
+    let currentView = 'today';
+    function refreshCurrentView() {
+        const container = document.getElementById('viewContent');
+        if(currentView === 'today') container.innerHTML = renderTodayView();
+        else container.innerHTML = renderWeekView();
+    }
+
+    function renderCourses() {
+        refreshCurrentView();
+    }
+
+    let notifyTimer = null;
+    function initReminder() {
+        if(notifyTimer) clearInterval(notifyTimer);
+        notifyTimer = setInterval(() => {
+            const reminderMins = parseInt(document.getElementById('reminderMinutes')?.value || 15);
+            const now = new Date();
+            const startDate = new Date(settings.semesterStart);
+            const weekNum = Math.floor((now - startDate)/(7*24*60*60*1000));
+            if(weekNum<0 || weekNum>=settings.totalWeeks) return;
+            let dayOfWeek = now.getDay();
+            let courseDay = (dayOfWeek===0?6:dayOfWeek-1);
+            const flatPeriods = getAllPeriodsFlat();
+            for(let c of courses) {
+                if(c.dayOfWeek !== courseDay) continue;
+                if(!c.weekIndices.includes(weekNum)) continue;
+                let startTime = c.customStart || (flatPeriods[c.periodIndex]?.start);
+                if(!startTime) continue;
+                let [hour, minute] = startTime.split(':').map(Number);
+                let classDateTime = new Date(now);
+                classDateTime.setHours(hour, minute, 0, 0);
+                let diffMin = (classDateTime - now) / 60000;
+                if(diffMin <= reminderMins && diffMin > 0 && diffMin <= reminderMins+0.5) {
+                    if (Notification.permission === "granted") {
+                        new Notification("📚 课程即将开始", { body: `${c.name} 在 ${c.location||'教室'} ${startTime} 开始` });
+                    }
+                }
+            }
+        }, 30000);
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    let settingsOpen = false;
+    const settingsPanel = document.getElementById('settingsPanel');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    
+    openSettingsBtn.addEventListener('click', () => {
+        settingsOpen = !settingsOpen;
+        if(settingsOpen) {
+            settingsPanel.classList.add('open');
+            openSettingsBtn.textContent = '✖️ 收起设置';
+            document.getElementById('semesterStartSetting').value = settings.semesterStart;
+            document.getElementById('totalWeeksSetting').value = settings.totalWeeks;
+            document.getElementById('morningCountSetting').value = settings.periods.morning.count;
+            document.getElementById('afternoonCountSetting').value = settings.periods.afternoon.count;
+            document.getElementById('eveningCountSetting').value = settings.periods.evening.count;
+            document.getElementById('weekendEnabledSetting').value = settings.weekendEnabled ? 'true' : 'false';
+            document.getElementById('durationMinutesSelect').value = settings.durationMinutes;
+            document.getElementById('breakMinutesSelect').value = settings.breakMinutes;
+        } else {
+            settingsPanel.classList.remove('open');
+            openSettingsBtn.textContent = '⚙️ 学期与课时设置';
+        }
+    });
+    
+    closeSettingsBtn.addEventListener('click', () => {
+        settingsOpen = false;
+        settingsPanel.classList.remove('open');
+        openSettingsBtn.textContent = '⚙️ 学期与课时设置';
+    });
+    
+    document.getElementById('applySettingsBtn').addEventListener('click', () => {
+        applyGlobalSettings();
+        settingsOpen = false;
+        settingsPanel.classList.remove('open');
+        openSettingsBtn.textContent = '⚙️ 学期与课时设置';
+    });
+    
+    if(!loadFromLocal()) {
+        rebuildPeriodsFromSettings();
+    }
+    
+    if(!settings.periods.morning.times || settings.periods.morning.times.length === 0) {
+        rebuildPeriodsFromSettings();
+    }
+    
+    document.getElementById('semesterInfo').innerHTML = `📆 ${settings.semesterStart} 起，共 ${settings.totalWeeks} 周 | ${settings.weekendEnabled ? '周末上课' : '周末休息'} | 每节${settings.durationMinutes}分钟 | 课间${settings.breakMinutes}分钟`;
+    document.getElementById('weekRangeDisplay').innerHTML = `共${settings.totalWeeks}周`;
+    refreshPeriodUI();
+    refreshCurrentView();
+    initReminder();
+    
+    document.getElementById('openAddCourseBtn')?.addEventListener('click', () => showAddCourseModal());
+    document.getElementById('savePeriodsBtn')?.addEventListener('click', () => {
+        refreshPeriodUI();
+        saveToLocal();
+        refreshCurrentView();
+        alert('课时时间已保存');
+    });
+    document.getElementById('requestNotifyBtn')?.addEventListener('click', async() => {
+        if(Notification.permission !== 'granted') await Notification.requestPermission();
+        alert(Notification.permission === 'granted' ? '通知已授权' : '未获得权限');
+    });
+    document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.view-tab[data-view]').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentView = tab.dataset.view;
+            refreshCurrentView();
+        });
+    });
+    document.querySelectorAll('#periodTabs .view-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#periodTabs .view-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            refreshPeriodUI();
+        });
+    });
+</script>
+</body>
+</html>
