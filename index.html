@@ -12,7 +12,7 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* 深色模式适配 */
+        /* 浅色模式（默认） */
         :root {
             --bg-primary: #f5f7fc;
             --card-bg: rgba(255, 255, 255, 0.96);
@@ -26,10 +26,27 @@
             --danger: #ef4444;
             --success: #10b981;
             --footer-bg: #ffffff;
+            --setting-icon-bg: #e2e8f0;
         }
 
+        /* 深色模式 */
+        body.dark {
+            --bg-primary: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-light: #334155;
+            --tab-bg: #0f172a;
+            --course-item-bg: #334155;
+            --accent: #60a5fa;
+            --accent-dark: #3b82f6;
+            --footer-bg: #1e293b;
+            --setting-icon-bg: #334155;
+        }
+
+        /* 跟随系统 */
         @media (prefers-color-scheme: dark) {
-            :root {
+            body.system {
                 --bg-primary: #0f172a;
                 --card-bg: #1e293b;
                 --text-primary: #f1f5f9;
@@ -40,21 +57,7 @@
                 --accent: #60a5fa;
                 --accent-dark: #3b82f6;
                 --footer-bg: #1e293b;
-            }
-            
-            input, select, textarea {
-                background: #334155;
-                color: #f1f5f9;
-                border-color: #475569;
-            }
-            
-            .badge {
-                background: #1e293b;
-                color: #94a3b8;
-            }
-            
-            .delete-btn {
-                color: #f87171;
+                --setting-icon-bg: #334155;
             }
         }
 
@@ -63,12 +66,37 @@
             font-family: system-ui, -apple-system, 'Helvetica Neue', 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
             padding: 20px 16px 100px;
             color: var(--text-primary);
-            transition: background 0.3s ease;
+            transition: background 0.3s ease, color 0.2s ease;
         }
 
         .app-container {
             max-width: 550px;
             margin: 0 auto;
+        }
+
+        /* 顶部主题切换栏 */
+        .theme-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+        
+        .theme-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-light);
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        
+        .theme-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
         }
 
         .card {
@@ -369,10 +397,23 @@
             margin: 0;
             padding: 8px 12px;
         }
+        
+        /* 通知测试按钮 */
+        .test-notify-btn {
+            background: var(--success);
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
 <div class="app-container" id="app">
+    <!-- 主题切换栏 -->
+    <div class="theme-bar">
+        <button class="theme-btn" data-theme="light">☀️ 浅色</button>
+        <button class="theme-btn" data-theme="dark">🌙 深色</button>
+        <button class="theme-btn" data-theme="system">📱 跟随系统</button>
+    </div>
+    
     <div id="mainPanel">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: baseline;">
@@ -409,6 +450,8 @@
                 <input type="number" id="reminderMinutes" value="15" min="0" max="1440" step="5">
             </div>
             <button id="requestNotifyBtn" class="btn-outline">🔔 请求通知权限</button>
+            <button id="testNotifyBtn" class="test-notify-btn">📢 测试通知（5秒后）</button>
+            <div class="sub" style="margin-top: 8px;">⚠️ 注意：首次使用需点击"请求通知权限"并允许，才能收到提醒</div>
         </div>
     </div>
 </div>
@@ -475,7 +518,6 @@
                         <option value="0">无课间</option>
                     </select>
                 </div>
-                <div class="sub">* 每节课后休息时长，自动生成各时段起止时间</div>
             </div>
             
             <button id="applySettingsBtn" style="background: var(--accent);">应用设置并刷新课表</button>
@@ -485,6 +527,88 @@
 </div>
 
 <script>
+    // ---------- 主题切换功能 ----------
+    function setTheme(theme) {
+        document.body.classList.remove('light', 'dark', 'system');
+        document.body.classList.add(theme);
+        localStorage.setItem('theme', theme);
+        
+        // 更新按钮高亮
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            if(btn.dataset.theme === theme) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+    
+    // 加载保存的主题
+    const savedTheme = localStorage.getItem('theme') || 'system';
+    setTheme(savedTheme);
+    
+    // 绑定主题切换按钮
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            setTheme(btn.dataset.theme);
+        });
+    });
+    
+    // ---------- 通知功能（针对手机优化）----------
+    let notificationPermission = false;
+    
+    // 请求通知权限
+    async function requestNotificationPermission() {
+        if (!('Notification' in window)) {
+            alert('您的浏览器不支持通知功能');
+            return false;
+        }
+        
+        if (Notification.permission === 'granted') {
+            notificationPermission = true;
+            alert('通知权限已开启 ✓');
+            return true;
+        } else if (Notification.permission !== 'denied') {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                notificationPermission = true;
+                alert('通知权限已开启 ✓ 现在可以收到课程提醒了');
+                return true;
+            } else {
+                alert('您拒绝了通知权限，将无法收到课程提醒。可以在手机设置中开启');
+                return false;
+            }
+        } else {
+            alert('通知权限已被拒绝。请在手机设置中为应用开启通知权限');
+            return false;
+        }
+    }
+    
+    // 发送通知
+    function sendNotification(title, body) {
+        if (Notification.permission === 'granted') {
+            // 使用 vibration（如果支持）
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            new Notification(title, { 
+                body: body,
+                icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%233b82f6"/%3E%3Ctext x="50" y="67" font-size="50" text-anchor="middle" fill="white" font-family="Arial"%3E📚%3C/text%3E%3C/svg%3E',
+                silent: false,
+                requireInteraction: true
+            });
+        }
+    }
+    
+    // 测试通知
+    function testNotification() {
+        if (Notification.permission === 'granted') {
+            sendNotification('📢 测试通知', '这是灵动课表的测试提醒！如果您能看到这条消息，说明通知功能正常工作。');
+        } else {
+            alert('请先点击"请求通知权限"按钮并允许通知');
+        }
+    }
+    
     // 存储结构
     let settings = {
         semesterStart: "2025-02-24",
@@ -502,7 +626,6 @@
 
     let courses = [];
 
-    // 根据时长、课间和各时段节数生成课时时间表
     function buildDefaultPeriodTimes(settings) {
         const morningCount = settings.periods.morning.count;
         const afternoonCount = settings.periods.afternoon.count;
@@ -520,7 +643,6 @@
                 let endMinute = endMin % 60;
                 let end = `${String(endHour).padStart(2,'0')}:${String(endMinute).padStart(2,'0')}`;
                 times.push({start, end});
-                // 课间休息
                 curMin += durationMin + breakMin;
                 curHour += Math.floor(curMin/60);
                 curMin = curMin % 60;
@@ -907,9 +1029,11 @@
         if(notifyTimer) clearInterval(notifyTimer);
         notifyTimer = setInterval(() => {
             const reminderMins = parseInt(document.getElementById('reminderMinutes')?.value || 15);
+            if(Notification.permission !== 'granted') return;
+            
             const now = new Date();
             const startDate = new Date(settings.semesterStart);
-            const weekNum = Math.floor((now - startDate)/(7*24*60*60*1000));
+            const weekNum = Math.floor((now - startDate) / (7*24*60*60*1000));
             if(weekNum<0 || weekNum>=settings.totalWeeks) return;
             let dayOfWeek = now.getDay();
             let courseDay = (dayOfWeek===0?6:dayOfWeek-1);
@@ -924,9 +1048,7 @@
                 classDateTime.setHours(hour, minute, 0, 0);
                 let diffMin = (classDateTime - now) / 60000;
                 if(diffMin <= reminderMins && diffMin > 0 && diffMin <= reminderMins+0.5) {
-                    if (Notification.permission === "granted") {
-                        new Notification("📚 课程即将开始", { body: `${c.name} 在 ${c.location||'教室'} ${startTime} 开始` });
-                    }
+                    sendNotification("📚 课程即将开始", `${c.name} 在 ${c.location||'教室'} ${startTime} 开始`);
                 }
             }
         }, 30000);
@@ -971,6 +1093,12 @@
         openSettingsBtn.textContent = '⚙️ 学期与课时设置';
     });
     
+    // 绑定通知按钮
+    document.getElementById('requestNotifyBtn').addEventListener('click', requestNotificationPermission);
+    document.getElementById('testNotifyBtn').addEventListener('click', () => {
+        testNotification();
+    });
+    
     if(!loadFromLocal()) {
         rebuildPeriodsFromSettings();
     }
@@ -991,10 +1119,6 @@
         saveToLocal();
         refreshCurrentView();
         alert('课时时间已保存');
-    });
-    document.getElementById('requestNotifyBtn')?.addEventListener('click', async() => {
-        if(Notification.permission !== 'granted') await Notification.requestPermission();
-        alert(Notification.permission === 'granted' ? '通知已授权' : '未获得权限');
     });
     document.querySelectorAll('.view-tab[data-view]').forEach(tab => {
         tab.addEventListener('click', () => {
